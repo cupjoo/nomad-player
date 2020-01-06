@@ -1,7 +1,10 @@
-Package    Version
----------- -------
-pip        19.3.1 
-selenium   3.141.0
-setuptools 44.0.0 
-urllib3    1.25.7 
-wheel      0.33.6 
+Package        Version
+-------------- -------
+beautifulsoup4 4.8.2  
+bs4            0.0.1  
+pip            19.3.1 
+selenium       3.141.0
+setuptools     44.0.0 
+soupsieve      1.9.5  
+urllib3        1.25.7 
+wheel          0.33.6 
