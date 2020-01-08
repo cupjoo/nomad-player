@@ -1,5 +1,6 @@
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from urllib.parse import urlencode
 
 class Migrator:
     def __init__(self):
@@ -21,10 +22,14 @@ class Migrator:
         except:
             self.shutdown()
     
-    def add_playlist(self):
+    def add_playlist(self, email, password):
         try:
+            # 벅스 아이디 로그인
             self.driver.get('https://music.bugs.co.kr/')
             self.driver.find_element_by_id('loginHeader').click()
+            self.driver.find_element_by_id('to_bugs_login').click()
+            self.driver.find_element_by_id('user_id').send_keys(email)
+            self.driver.find_element_by_id('passwd').send_keys(password)
             self.driver.get_screenshot_as_file('bugs.png')
         except:
             self.shutdown()
@@ -34,5 +39,5 @@ class Migrator:
 
 migrator = Migrator()
 migrator.crawl_list('466034240')
-migrator.add_playlist()
+migrator.add_playlist('id', 'pw')
 migrator.shutdown()
