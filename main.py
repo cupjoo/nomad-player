@@ -68,30 +68,37 @@ class Migrator:
         except NoSuchElementException:
             self.shutdown('Failed to Bugs Login')
 
-    def add_playlist(self):
+    def add_playlist(self, flag):
         try:
             with open('Playlist.txt', 'r', encoding="utf-8") as f:
                 plist = f.readlines()
         except FileNotFoundError:
             self.shutdown('Failed to load local playlist')
 
+        failure_list = []
         for song in plist:
-            try:
-                # search song info
-                self.driver.find_element_by_id('headerSearchInput').clear()
-                self.driver.find_element_by_id('headerSearchInput').send_keys(song)
-                self.driver.find_element_by_id('hederSearchFormButton').click()
-                WebDriverWait(self.driver, 2) \
-                    .until(EC.presence_of_element_located((By.ID, 'DEFAULT0')))
+            # search song info
+            self.driver.find_element_by_id('headerSearchInput').clear()
+            self.driver.find_element_by_id('headerSearchInput').send_keys(song)
+            self.driver.find_element_by_id('hederSearchFormButton').click()
 
+            try:
+                self.driver.find_element_by_id('DEFAULT0')
                 # add song to first playlist
                 self.driver.find_element_by_xpath('//*[@id="DEFAULT0"]/table/tbody/tr[1]/td[8]/a').click()
                 self.driver.find_element_by_xpath('//*[@id="track2playlistScrollArea"]/div/div/ul/li[2]/a').click()
                 self.driver.find_element_by_xpath('//*[@id="bugsAlert"]/section/p/button').click()
             except NoSuchElementException:
-                self.shutdown('Failed to add songs to Bugs Playlist')
+                failure_list.extend(song)
+                pass
+
         try:
-            os.remove(r"Playlist.txt")
+            if flag:
+                os.remove(r"Playlist.txt")
+            # save failure playlist to local
+            with open('Failure_list.txt', 'w', encoding="utf-8") as f:
+                for song in failure_list:
+                    f.write("%s" % song)
             print('Add Playlist to Bugs Successed')
         except OSError:
             self.shutdown('Failed to remove local playlist')
@@ -106,5 +113,5 @@ class Migrator:
 bugs_migrator = Migrator()
 bugs_migrator.scrap_playlist('466034240')   # Playlist Serial Number
 bugs_migrator.login('', '')                 # Bugs Account (Email) / Password
-bugs_migrator.add_playlist()
+bugs_migrator.add_playlist('N')             # whether remove local playlist file (Y/N)
 bugs_migrator.shutdown('Migration Successed!')
