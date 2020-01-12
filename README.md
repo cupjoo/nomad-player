@@ -10,8 +10,6 @@ Check the version of chrome browser with following command.
 google-chrome --version
 ```
 
-Also, this app is recommended to run on Ubuntu 18.04.
-
 ### Run app
 ```bash
 $ git clone https://github.com/cupjoo/bugs-migrator.git
