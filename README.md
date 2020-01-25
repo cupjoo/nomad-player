@@ -6,6 +6,9 @@ Simple playlist migrator app from Melon to Bugs with crawling.
 
 ![screenshot.gif](docs/screenshot.gif)
 
+## Release Note (Ver 2.0)
+- Supports multiprocessing
+
 ## Prerequisites
 This application will proceed in the following environment (Recommended).
 - Python 3.7
