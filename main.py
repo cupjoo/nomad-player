@@ -50,7 +50,7 @@ class Migrator:
                     f.write("%s\n" % song)
             print('Scrap Melon Playlist Successed')
         except:
-            self.shutdown('Failed to scrap Melon Playlist')
+            self.shutdown('Failed to scrap Melon Playlist', False)
 
     def login(self, email, password):
         try:
@@ -66,16 +66,18 @@ class Migrator:
                 .until(EC.presence_of_element_located((By.XPATH, '//*[@id="loginHeader"]/a[1]')))
             print('Bugs Login Successed')
         except NoSuchElementException:
-            self.shutdown('Failed to Bugs Login')
+            self.shutdown('Failed to Bugs Login', False)
 
     def add_playlist(self, flag):
         try:
             with open('Playlist.txt', 'r', encoding="utf-8") as f:
                 plist = f.readlines()
         except FileNotFoundError:
-            self.shutdown('Failed to load local playlist')
+            self.shutdown('Failed to load local playlist', False)
+        ff = open('Failure_list.txt', 'a', encoding="utf-8")
 
-        failure_list = []
+        WebDriverWait(self.driver, 3) \
+            .until(EC.presence_of_element_located((By.ID, 'headerSearchInput')))
         for song in plist:
             # search song info
             self.driver.find_element_by_id('headerSearchInput').clear()
@@ -89,29 +91,26 @@ class Migrator:
                 self.driver.find_element_by_xpath('//*[@id="track2playlistScrollArea"]/div/div/ul/li[2]/a').click()
                 self.driver.find_element_by_xpath('//*[@id="bugsAlert"]/section/p/button').click()
             except NoSuchElementException:
-                failure_list.extend(song)
+                # save failure playlist to local
+                ff.write("%s" % song)
                 pass
-
         try:
             if flag:
                 os.remove(r"Playlist.txt")
-            # save failure playlist to local
-            with open('Failure_list.txt', 'w', encoding="utf-8") as f:
-                for song in failure_list:
-                    f.write("%s" % song)
             print('Add Playlist to Bugs Successed')
         except OSError:
-            self.shutdown('Failed to remove local playlist')
+            self.shutdown('Failed to remove local playlist', False)
 
-    def shutdown(self, msg):
+    def shutdown(self, msg, flag):
+        if not flag:
+            self.driver.get_screenshot_as_file('fails.png')
         print(msg)
-        self.driver.get_screenshot_as_file('fails.png')
         self.driver.close()
         sys.exit()
 
 
 bugs_migrator = Migrator()
-bugs_migrator.scrap_playlist('466034240')   # Playlist Serial Number
-bugs_migrator.login('', '')                 # Bugs Account (Email) / Password
-bugs_migrator.add_playlist('N')             # whether remove local playlist file (Y/N)
-bugs_migrator.shutdown('Migration Successed!')
+bugs_migrator.scrap_playlist('466034240')       # Playlist Serial Number
+bugs_migrator.login('', '')                     # Bugs Account (Email) / Password
+bugs_migrator.add_playlist(False)               # whether remove local playlist file (True/False)
+bugs_migrator.shutdown('Migration Successed!', True)
