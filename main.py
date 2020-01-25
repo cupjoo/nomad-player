@@ -1,4 +1,3 @@
-import os
 import platform
 import sys
 from bs4 import BeautifulSoup
@@ -15,42 +14,49 @@ class Migrator:
         if "Windows" in platform.platform():
             driver_path += '.exe'
         self.driver = webdriver.Chrome(driver_path)
-        self.driver.implicitly_wait(3)
+        self.driver.implicitly_wait(2)
+        self.failure_list = []
 
-    def scrap_1_page(self):
-        # parse playlist
-        plist = []
+    def scrap_1_page(self, page=None):
+        # parse page
+        if page is not None:
+            self.driver.execute_script("javascript:pageObj.sendPage('" + str(page * 50 + 1) + "')")
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
         title = soup.select('#frm > div > table > tbody > tr > td:nth-child(5) > div > div > '
                             'div.ellipsis.rank01 > span > a')
         album = soup.select('#frm > div > table > tbody > tr > td:nth-child(6) > div > div > div > a')
+
+        plist = []
         for i in range(len(title)):
             plist.append(title[i].text + ' ' + album[i].text)
         return plist
 
-    def scrap_playlist(self, seq):
-        playlist = []
+    def scrap_playlist(self, psrno):
         try:
-            melon_link = 'https://www.melon.com/mymusic/dj/mymusicdjplaylistview_inform.htm'
-            self.driver.get(melon_link+'?plylstSeq='+seq)
-            max_page = int(self.driver
-                           .find_element_by_xpath('//*[@id="conts"]/div[4]/div[1]/h5/span')
-                           .text.strip('()')
-            )
-            max_page = int(max_page/50) + (2 if max_page % 50 > 0 else 1)
+            self.driver.get('https://www.melon.com/mymusic/dj/mymusicdjplaylistview_inform.htm?plylstSeq=' + psrno)
+            max_page = int(self.driver.find_element_by_xpath('//*[@id="conts"]/div[4]/div[1]/h5/span').text.strip('()'))
+            max_page = int(max_page / 50) + (2 if max_page % 50 > 0 else 1)
 
-            playlist.extend(self.scrap_1_page())
+            plist = [self.scrap_1_page()]
             for page_num in range(1, max_page):
-                self.driver.execute_script("javascript:pageObj.sendPage('"+str(page_num*50+1)+"')")
-                playlist.extend(self.scrap_1_page())
+                plist.append(self.scrap_1_page(page_num))
 
-            # save playlist to local
             with open('Playlist.txt', 'w', encoding="utf-8") as f:
-                for song in playlist:
+                for song in plist:
                     f.write("%s\n" % song)
+            f.close()
             print('Scrap Melon Playlist Successed')
         except:
             self.shutdown('Failed to scrap Melon Playlist', False)
+
+    def read_playlist(self):
+        try:
+            with open('Playlist.txt', 'r', encoding="utf-8") as f:
+                plist = f.readlines()
+                f.close()
+                return plist
+        except FileNotFoundError:
+            self.shutdown('Failed to load local playlist', False)
 
     def login(self, email, password):
         try:
@@ -68,14 +74,7 @@ class Migrator:
         except NoSuchElementException:
             self.shutdown('Failed to Bugs Login', False)
 
-    def add_playlist(self, flag):
-        try:
-            with open('Playlist.txt', 'r', encoding="utf-8") as f:
-                plist = f.readlines()
-        except FileNotFoundError:
-            self.shutdown('Failed to load local playlist', False)
-        ff = open('Failure_list.txt', 'a', encoding="utf-8")
-
+    def add_playlist(self, plist):
         WebDriverWait(self.driver, 3) \
             .until(EC.presence_of_element_located((By.ID, 'headerSearchInput')))
         for song in plist:
@@ -91,26 +90,40 @@ class Migrator:
                 self.driver.find_element_by_xpath('//*[@id="track2playlistScrollArea"]/div/div/ul/li[2]/a').click()
                 self.driver.find_element_by_xpath('//*[@id="bugsAlert"]/section/p/button').click()
             except NoSuchElementException:
-                # save failure playlist to local
-                ff.write("%s" % song)
+                # add failure playlist
+                self.failure_list.append(song)
                 pass
-        try:
-            if flag:
-                os.remove(r"Playlist.txt")
-            print('Add Playlist to Bugs Successed')
-        except OSError:
-            self.shutdown('Failed to remove local playlist', False)
+        print('Add Playlist to Bugs Successed')
 
     def shutdown(self, msg, flag):
         if not flag:
             self.driver.get_screenshot_as_file('fails.png')
         print(msg)
+
+        # save failure playlist to local
+        with open('Failure_list.txt', 'a', encoding="utf-8") as f:
+            for song in self.failure_list:
+                f.write("%s" % song)
+        f.close()
         self.driver.close()
         sys.exit()
 
+    def start(self, psrno=None, bid=None, pw=None, remainder=True):
+        if psrno is not None:
+            self.scrap_playlist(psrno)
 
-bugs_migrator = Migrator()
-bugs_migrator.scrap_playlist('466034240')       # Playlist Serial Number
-bugs_migrator.login('', '')                     # Bugs Account (Email) / Password
-bugs_migrator.add_playlist(False)               # whether remove local playlist file (True/False)
-bugs_migrator.shutdown('Migration Successed!', True)
+        if all(info is not None for info in [bid, pw, remainder]):
+            plist = self.read_playlist()
+
+            self.login(bid, pw)
+            self.add_playlist(plist)
+        self.shutdown('Migration Successed!', True)
+
+
+if __name__ == '__main__':
+    bugs_migrator = Migrator()
+    bugs_migrator.start(
+        psrno='466034240',  # Playlist Serial Number
+        bid='sample@naver.com',  # Bugs Account (Email)
+        pw='sample',  # Bugs Password
+    )
