@@ -114,7 +114,8 @@ class Migrator:
 
         if all(info is not None for info in [bid, pw, remainder]):
             plist = self.read_playlist()
-
+            
+            # add playlist with n threads
             self.login(bid, pw)
             self.add_playlist(plist)
         self.shutdown('Migration Successed!', True)
