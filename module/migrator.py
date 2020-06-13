@@ -1,10 +1,12 @@
 from abc import ABCMeta, abstractmethod
 from multiprocessing import Pool
+from time import sleep
+
 from selenium.webdriver import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
 
 from module.utils import shutdown, get_driver, bugs_login, youtube_login
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -85,23 +87,31 @@ class YoutubeMigrator(Migrator):
         success = youtube_login(driver=driver, email=self.email, pw=self.pw)
         plist = self.read_playlist()
 
+        ONLY_SONG = '//*[@id="chips"]/ytmusic-chip-cloud-chip-renderer[1]/a'
+        FIRST_SONG = '//*[@id="contents"]/ytmusic-responsive-list-item-renderer[1]'
+        ADD_SONG = '//*[@id="items"]/ytmusic-toggle-menu-service-item-renderer[1]'
+        IS_ADDED = '//*[@id="items"]/ytmusic-toggle-menu-service-item-renderer[1]/yt-formatted-string'
+
         if success:
             for song in plist:
                 # search song info
                 driver.get('https://music.youtube.com/search?q='+song)
-                driver.find_element_by_xpath('//*[@id="chips"]/ytmusic-chip-cloud-chip-renderer[2]/a').click()
-                element = driver\
-                    .find_element_by_xpath('//*[@id="contents"]/ytmusic-responsive-list-item-renderer[1]/div[2]')
-                action.context_click(element).perform()
-                driver.find_element_by_xpath('//*[@id="items"]/ytmusic-toggle-menu-service-item-renderer[1]').click()
                 try:
-                    driver.find_element_by_id('DEFAULT0')
-                    # add song to first playlist
-                    driver.find_element_by_xpath('//*[@id="DEFAULT0"]/table/tbody/tr[1]/td[8]/a').click()
-                    driver.find_element_by_xpath('//*[@id="track2playlistScrollArea"]/div/div/ul/li[2]/a').click()
-                    driver.find_element_by_xpath('//*[@id="bugsAlert"]/section/p/button').click()
+                    driver.find_element_by_xpath(ONLY_SONG).click()
+                    WebDriverWait(driver, 4).until(
+                        EC.presence_of_element_located((By.XPATH, FIRST_SONG))
+                    )
+                    element = driver.find_element_by_xpath(FIRST_SONG)
+                    driver.execute_script('window.scrollTo(0,-1000);')
+                    sleep(3)
+                    action.context_click(element).perform()
+                    if driver.find_element_by_xpath(IS_ADDED).text != '보관함에서 삭제':
+                        driver.find_element_by_xpath(ADD_SONG).click()
                 except NoSuchElementException:
                     # add failure playlist
                     self.failure_list.append(song)
                     pass
-        print('Add Playlist to Bugs Successed')
+                except StaleElementReferenceException:
+                    self.failure_list.append(song)
+                    pass
+            print('Add Playlist to Bugs Successed')
