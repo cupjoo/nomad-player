@@ -12,11 +12,7 @@ class Scrapper(metaclass=ABCMeta):
         self.pw = pw
 
     @abstractmethod
-    def scrap_page(self):
-        pass
-
-    @abstractmethod
-    def scrap(self, psrno):
+    def scrap(self, psrno=None):
         pass
 
 
@@ -39,7 +35,7 @@ class MelonScrapper(Scrapper):
             plist.append(title[i].text + ' ' + album[i].text)
         return plist
 
-    def scrap(self, psrno):
+    def scrap(self, psrno=None):
         try:
             self.driver.get('https://www.melon.com/mymusic/dj/mymusicdjplaylistview_inform.htm?plylstSeq=' + psrno)
             max_page = int(self.driver.find_element_by_xpath('//*[@id="conts"]/div[4]/div[1]/h5/span').text.strip('()'))
@@ -56,3 +52,40 @@ class MelonScrapper(Scrapper):
             print('Scrap Melon Playlist Successed')
         except:
             shutdown(msg='Failed to scrap Melon Playlist', driver=self.driver)
+
+
+class BugsScrapper(Scrapper):
+    def login(self):
+        return bugs_login(driver=self.driver, email=self.email, pw=self.pw)
+
+    def scrap_page(self, link):
+        self.driver.get(link)
+        soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+        title = soup.select('#USER_LIKE_TRACK1234 > table > tbody > tr > th > p > a')
+        album = soup.select('#USER_LIKE_TRACK1234 > table > tbody > tr > td:nth-child(8) > a')
+        plist = []
+        for i in range(len(title)):
+            plist.append(title[i].text + ' ' + album[i].text)
+        return plist
+
+    def scrap(self, psrno=None):
+        success = bugs_login(driver=self.driver, email=self.email, pw=self.pw)
+
+        if success:
+            print('scrap the liked track')
+            link = 'https://music.bugs.co.kr/user/library/like/track?page='
+            self.driver.get(link+str(1))
+            max_page = int(self.driver.find_element_by_xpath('//*[@id="container"]/section/div/div[2]/a[last()]').text)
+
+            plist = []
+            try:
+                for idx in range(1, max_page+1):
+                    plist.append(self.scrap_page(link+str(idx)))
+                with open('Playlist.txt', 'w', encoding="utf-8") as f:
+                    for songs in plist:
+                        for song in songs:
+                            f.write("%s\n" % song)
+                f.close()
+                print('Scrap Melon Playlist Successed')
+            except FileExistsError:
+                shutdown(msg='Failed to scrap Melon Playlist', driver=self.driver)
