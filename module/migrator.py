@@ -1,6 +1,9 @@
 from abc import ABCMeta, abstractmethod
 from multiprocessing import Pool
-from module.utils import shutdown, get_driver, bugs_login
+from selenium.webdriver import ActionChains
+from selenium.webdriver.remote.webelement import WebElement
+
+from module.utils import shutdown, get_driver, bugs_login, youtube_login
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -12,10 +15,6 @@ class Migrator(metaclass=ABCMeta):
         self.email = email
         self.pw = pw
         self.failure_list = []
-
-    @abstractmethod
-    def login(self, driver):
-        pass
 
     @abstractmethod
     def add_playlist(self, plist):
@@ -51,12 +50,9 @@ class Migrator(metaclass=ABCMeta):
 
 
 class BugsMigrator(Migrator):
-    def login(self, driver):
-        return bugs_login(driver=driver, email=self.email, pw=self.pw)
-
     def add_playlist(self, plist):
         driver = get_driver()
-        success = self.login(driver)
+        success = bugs_login(driver=driver, email=self.email, pw=self.pw)
         WebDriverWait(driver, 3) \
             .until(EC.presence_of_element_located((By.ID, 'headerSearchInput')))
 
@@ -79,4 +75,33 @@ class BugsMigrator(Migrator):
                     pass
 
         self.save_failure(plist=None if success else plist)
+        print('Add Playlist to Bugs Successed')
+
+
+class YoutubeMigrator(Migrator):
+    def add_playlist(self, plist):
+        driver = get_driver()
+        action = ActionChains(driver)
+        success = youtube_login(driver=driver, email=self.email, pw=self.pw)
+        plist = self.read_playlist()
+
+        if success:
+            for song in plist:
+                # search song info
+                driver.get('https://music.youtube.com/search?q='+song)
+                driver.find_element_by_xpath('//*[@id="chips"]/ytmusic-chip-cloud-chip-renderer[2]/a').click()
+                element = driver\
+                    .find_element_by_xpath('//*[@id="contents"]/ytmusic-responsive-list-item-renderer[1]/div[2]')
+                action.context_click(element).perform()
+                driver.find_element_by_xpath('//*[@id="items"]/ytmusic-toggle-menu-service-item-renderer[1]').click()
+                try:
+                    driver.find_element_by_id('DEFAULT0')
+                    # add song to first playlist
+                    driver.find_element_by_xpath('//*[@id="DEFAULT0"]/table/tbody/tr[1]/td[8]/a').click()
+                    driver.find_element_by_xpath('//*[@id="track2playlistScrollArea"]/div/div/ul/li[2]/a').click()
+                    driver.find_element_by_xpath('//*[@id="bugsAlert"]/section/p/button').click()
+                except NoSuchElementException:
+                    # add failure playlist
+                    self.failure_list.append(song)
+                    pass
         print('Add Playlist to Bugs Successed')

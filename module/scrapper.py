@@ -55,9 +55,6 @@ class MelonScrapper(Scrapper):
 
 
 class BugsScrapper(Scrapper):
-    def login(self):
-        return bugs_login(driver=self.driver, email=self.email, pw=self.pw)
-
     def scrap_page(self, link):
         self.driver.get(link)
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')

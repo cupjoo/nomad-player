@@ -1,4 +1,4 @@
-from module.migrator import BugsMigrator
+from module.migrator import BugsMigrator, YoutubeMigrator
 from module.scrapper import MelonScrapper, BugsScrapper
 
 
@@ -23,7 +23,14 @@ def migrate():
     # - Login required
     # - Migrate Playlist from 'Playlist.txt' to 'liked playlist'
     #
-    migrator = BugsMigrator(email='sample@gmail.com', pw='sample')  # Bugs Email / Password
+    # migrator = BugsMigrator(email='sample@gmail.com', pw='sample')  # Bugs Email / Password
+    # migrator.migrate()
+
+    # Youtube Music Migrator
+    # - Login required
+    # - Migrate Playlist from 'Playlist.txt' to 'songs'
+    #
+    migrator = YoutubeMigrator(email='sample@gmail.com', pw='sample')
     migrator.migrate()
 
 

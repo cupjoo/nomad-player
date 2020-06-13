@@ -5,13 +5,14 @@ A simple playlist migration app supporting the following sites.
 | from | to |
 |---|---|
 | Melon  | Bugs |
+| Bugs | Youtube Music |
 
 ## Screenshot
 
 ![screenshot.gif](docs/screenshot.gif)
 
-## Release Note (Ver 2.0)
-- Supports multiprocessing
+## Release Note (Ver 2.1)
+- support Youtube Music
 
 ## Prerequisites
 This application will proceed in the following environment (Recommended).
@@ -45,3 +46,7 @@ $ python main.py
 
 ## Caution
 Too many attempts to run the app in a short period of time can result in restricted access from the melon (maybe for about 10~20 minutes).
+
+## Issues
+
+[Automatically Google Login by Selenium](https://gist.github.com/ikegami-yukino/51b247080976cb41fe93#gistcomment-3181443)
