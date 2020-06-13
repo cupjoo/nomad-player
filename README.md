@@ -1,6 +1,10 @@
-# Bugs Migrator
+# Nomad Player
 
-Simple playlist migrator app from Melon to Bugs with crawling.
+A simple playlist migration app supporting the following sites.
+
+| from | to |
+|---|---|
+| Melon  | Bugs |
 
 ## Screenshot
 
@@ -12,7 +16,7 @@ Simple playlist migrator app from Melon to Bugs with crawling.
 ## Prerequisites
 This application will proceed in the following environment (Recommended).
 - Python 3.7
-- Chrome Driver [79.0.3945.36](https://chromedriver.storage.googleapis.com/index.html?path=79.0.3945.36/)
+- Chrome Driver [83.0.4103.39](https://chromedriver.storage.googleapis.com/index.html?path=83.0.4103.39/)
 
 Before running the app, the `chrome browser` and `chrome driver` with same version is needed. Check the version of chrome browser with following command.
 ```bash
@@ -22,9 +26,9 @@ google-chrome --version
 ## Installation
 Following commands run on Ubuntu 18.04. There are some variations on Windows.
 ```bash
-$ git clone https://github.com/cupjoo/bugs-migrator.git
+$ git clone https://github.com/cupjoo/nomad-player.git
 $ virtualenv venv && . venv/bin/activate
-$ cd bugs-migrator
+$ cd nomad-player
 $ pip install -r requirements/requirement.txt
 ```
 
